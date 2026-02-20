@@ -153,4 +153,3 @@ This architecture mirrors cryptographic principles used in:
 ## 👩‍💻 Author
 
 **Sowmya Dasari**  
-Final Year Project – Secure Systems Implementation  
