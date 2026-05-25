@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Shield, ShieldCheck, ShieldAlert, Download, Cpu, Key, FileText } from "lucide-react";
+import { Shield, ShieldCheck, ShieldAlert, Download, Cpu, Key, FileText, Eye, AlertCircle } from "lucide-react";
 
 export default function SharePreview() {
   const [fileId, setFileId] = useState("");
@@ -14,6 +14,11 @@ export default function SharePreview() {
   const [progress, setProgress] = useState(0);
   const [cryptoLogs, setCryptoLogs] = useState([]);
   const [completed, setCompleted] = useState(false);
+
+  // Preview states
+  const [previewType, setPreviewType] = useState("none"); // "text", "image", "none"
+  const [previewContent, setPreviewContent] = useState("");
+  const [rawBlob, setRawBlob] = useState(null); // Keep blob in case they want to download later
 
   useEffect(() => {
     // 1. Parse details from URL path and search query
@@ -59,6 +64,9 @@ export default function SharePreview() {
     setDecrypting(true);
     setProgress(5);
     setCryptoLogs([]);
+    setCompleted(false);
+    setPreviewType("none");
+    setPreviewContent("");
 
     const steps = [
       { text: "🛰️ Establishing secure handshake channel with server...", delay: 300, pct: 15 },
@@ -75,29 +83,68 @@ export default function SharePreview() {
       setProgress(steps[i].pct);
     }
 
-    // Now trigger download
     try {
       const response = await axios.get(`/api/files/download/${fileId}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: "blob"
       });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", metadata.filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      const blob = response.data;
+      setRawBlob(blob);
+
+      const filenameLower = metadata.filename.toLowerCase();
+      const isImage = filenameLower.endsWith(".png") || 
+                      filenameLower.endsWith(".jpg") || 
+                      filenameLower.endsWith(".jpeg") || 
+                      filenameLower.endsWith(".gif") || 
+                      filenameLower.endsWith(".svg");
+                      
+      const isText = filenameLower.endsWith(".txt") || 
+                     filenameLower.endsWith(".md") || 
+                     filenameLower.endsWith(".json") || 
+                     filenameLower.endsWith(".csv") || 
+                     filenameLower.endsWith(".log") ||
+                     filenameLower.endsWith(".py") ||
+                     filenameLower.endsWith(".js") ||
+                     filenameLower.endsWith(".css") ||
+                     filenameLower.endsWith(".html");
+
+      if (isImage) {
+        const url = URL.createObjectURL(blob);
+        setPreviewType("image");
+        setPreviewContent(url);
+        setCryptoLogs((prev) => [...prev, "🎨 Decrypted image payload parsed successfully. Rendering preview..."]);
+      } else if (isText) {
+        const text = await blob.text();
+        setPreviewType("text");
+        setPreviewContent(text);
+        setCryptoLogs((prev) => [...prev, "📝 Decrypted text payload parsed successfully. Rendering preview..."]);
+      } else {
+        setPreviewType("none");
+        setCryptoLogs((prev) => [...prev, "📦 Binary format detected. Auto-triggering standard file download..."]);
+        // Auto trigger download for unsupported previews
+        triggerDownload(blob);
+      }
       
       setCompleted(true);
-      setCryptoLogs((prev) => [...prev, "🎉 DECRYPTION COMPLETED! Plaintext returned safely."]);
+      setCryptoLogs((prev) => [...prev, "🎉 DECRYPTION COMPLETE! Cryptographic envelope successfully opened."]);
     } catch (err) {
       setCryptoLogs((prev) => [...prev, "❌ CRYPTOGRAPHIC VERIFICATION FAILURE: Secure envelope corrupted or signature forged!"]);
-      alert("Download Quarantine: Decryption failed.");
+      alert("Verification Quarantine: Decryption failed.");
     } finally {
       setDecrypting(false);
     }
+  };
+
+  const triggerDownload = (blob = rawBlob) => {
+    if (!blob) return;
+    const url = window.URL.createObjectURL(new Blob([blob]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", metadata.filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
   const formatBytes = (bytes) => {
@@ -115,9 +162,9 @@ export default function SharePreview() {
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none animate-pulse-slow"></div>
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none animate-pulse-slow"></div>
 
-      <div className="w-full max-w-xl z-10">
+      <div className="w-full max-w-2xl z-10 my-8">
         {/* Brand Header */}
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-6">
           <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-[var(--color-neon-blue)]/50 shadow-[0_0_15px_rgba(0,240,255,0.3)] flex items-center justify-center mb-3 animate-pulse">
             <Shield className="text-[var(--color-neon-blue)]" size={28} />
           </div>
@@ -125,12 +172,12 @@ export default function SharePreview() {
             SAFESHARE <span className="text-[var(--color-neon-green)] text-glow-green">PORTAL</span>
           </h1>
           <p className="text-[10px] text-slate-500 tracking-wider mt-1 uppercase font-mono">
-            Zero-Trust Vault Receiver Page
+            Zero-Trust Vault Decryptor & Viewer
           </p>
         </div>
 
         {/* main Portal Card */}
-        <div className="glass-card rounded-2xl p-8 border border-white/5 shadow-2xl relative overflow-hidden animate-scan">
+        <div className="glass-card rounded-2xl p-6 md:p-8 border border-white/5 shadow-2xl relative overflow-hidden animate-scan">
           {loading ? (
             <div className="text-center py-12 font-mono text-xs text-slate-450 space-y-4">
               <Cpu size={24} className="mx-auto text-[var(--color-neon-blue)] animate-spin" />
@@ -168,7 +215,7 @@ export default function SharePreview() {
               <div className="grid grid-cols-2 gap-4 font-mono text-xs border border-slate-900 rounded-xl p-4 bg-slate-950/60 shadow-inner">
                 <div className="space-y-1 text-left">
                   <div className="text-[10px] text-slate-500 uppercase">Target Identity File</div>
-                  <div className="font-bold text-slate-200 flex items-center gap-1.5 truncate max-w-[200px]" title={metadata.filename}>
+                  <div className="font-bold text-slate-200 flex items-center gap-1.5 truncate max-w-[220px]" title={metadata.filename}>
                     <FileText size={12} className="text-[var(--color-neon-blue)]" /> {metadata.filename}
                   </div>
                 </div>
@@ -178,11 +225,11 @@ export default function SharePreview() {
                 </div>
                 <div className="space-y-1 text-left">
                   <div className="text-[10px] text-slate-500 uppercase">Cryptographic Sender</div>
-                  <div className="font-bold text-[var(--color-neon-green)] truncate max-w-[200px]">{metadata.owner_username}</div>
+                  <div className="font-bold text-[var(--color-neon-green)] truncate max-w-[220px]">{metadata.owner_username}</div>
                 </div>
                 <div className="space-y-1 text-left">
                   <div className="text-[10px] text-slate-500 uppercase">Intended Recipient</div>
-                  <div className="font-bold text-slate-350 truncate max-w-[200px]">{metadata.recipient_username}</div>
+                  <div className="font-bold text-slate-350 truncate max-w-[220px]">{metadata.recipient_username}</div>
                 </div>
                 <div className="col-span-2 pt-2 border-t border-slate-950 text-left">
                   <div className="text-[10px] text-slate-500 uppercase">SHA-256 Seal Checksum</div>
@@ -222,46 +269,86 @@ export default function SharePreview() {
                         {log}
                       </div>
                     ))}
-                    {!completed && !log.startsWith?.("❌") && <div className="terminal-cursor text-slate-600"></div>}
+                    {!completed && !cryptoLogs[cryptoLogs.length - 1]?.startsWith("❌") && <div className="terminal-cursor text-slate-600"></div>}
                   </div>
+                </div>
+              )}
+
+              {/* LIVE DECRYPTED FILE PREVIEW MATRIX */}
+              {completed && previewType !== "none" && (
+                <div className="space-y-2 text-left">
+                  <h3 className="text-[10px] text-slate-400 font-mono uppercase tracking-wider flex items-center gap-1.5">
+                    <Eye size={12} className="text-[var(--color-neon-green)] animate-pulse" /> Decrypted Plaintext Live Preview
+                  </h3>
+                  
+                  {previewType === "text" && (
+                    <div className="w-full border border-emerald-900/40 rounded-xl bg-slate-950 p-4 font-mono text-xs text-emerald-400/90 max-h-64 overflow-y-auto leading-relaxed shadow-inner break-all whitespace-pre-wrap select-text selection:bg-emerald-950 selection:text-white">
+                      {previewContent}
+                    </div>
+                  )}
+
+                  {previewType === "image" && (
+                    <div className="w-full border border-emerald-900/40 rounded-xl bg-slate-950/40 p-3 flex justify-center items-center shadow-inner relative overflow-hidden group">
+                      <div className="absolute inset-0 bg-grid-cyber opacity-10"></div>
+                      <img 
+                        src={previewContent} 
+                        alt="Decrypted Vault Preview" 
+                        className="max-h-64 max-w-full rounded-lg object-contain border border-white/5 shadow-2xl relative z-10 transition-transform duration-350 hover:scale-102"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {completed && previewType === "none" && (
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-900 text-slate-500 text-[10px] font-mono flex items-center gap-2 text-left">
+                  <AlertCircle size={14} className="text-amber-500/80" />
+                  <span>Interactive preview not supported for binary file. File downloaded successfully to your computer disk.</span>
                 </div>
               )}
 
               {/* Action Buttons */}
               <div className="space-y-3">
-                <button
-                  onClick={handleVerifyAndDecrypt}
-                  disabled={decrypting || completed}
-                  className={`w-full relative overflow-hidden group py-3 rounded-xl border font-mono font-bold text-xs uppercase tracking-widest cursor-pointer ${
-                    decrypting
-                      ? "bg-slate-950 border-slate-900 text-slate-500 cursor-not-allowed"
-                      : completed
-                        ? "bg-slate-950 text-[var(--color-neon-green)] border-[var(--color-neon-green)]/40 hover:bg-[var(--color-neon-green)] hover:text-slate-950 shadow-[0_0_10px_rgba(57,255,20,0.05)] cursor-default"
+                {!completed ? (
+                  <button
+                    onClick={handleVerifyAndDecrypt}
+                    disabled={decrypting}
+                    className={`w-full relative overflow-hidden group py-3 rounded-xl border font-mono font-bold text-xs uppercase tracking-widest cursor-pointer ${
+                      decrypting
+                        ? "bg-slate-950 border-slate-900 text-slate-500 cursor-not-allowed"
                         : "bg-slate-950 text-[var(--color-neon-blue)] border-[var(--color-neon-blue)] hover:bg-[var(--color-neon-blue)] hover:text-slate-950 transition-all duration-300 shadow-[0_0_10px_rgba(0,240,255,0.1)] hover:shadow-[0_0_20px_rgba(0,240,255,0.3)]"
-                  }`}
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    {completed ? (
-                      <>
-                        <ShieldCheck size={14} /> DECRYPTION COMPLETE
-                      </>
-                    ) : decrypting ? (
-                      <>
-                        <Cpu size={14} className="animate-spin" /> EXTRACTING PLAINTEXT...
-                      </>
-                    ) : (
-                      <>
-                        <Download size={14} /> VERIFY & DECRYPT FILE
-                      </>
-                    )}
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      {decrypting ? (
+                        <>
+                          <Cpu size={14} className="animate-spin" /> RUNNING ZERO-TRUST ENGINE...
+                        </>
+                      ) : (
+                        <>
+                          <Eye size={14} /> DECRYPT & VIEW SECURELY
+                        </>
+                      )}
+                    </div>
+                  </button>
+                ) : (
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      onClick={() => triggerDownload()}
+                      className="flex-1 py-3 rounded-xl bg-slate-950 text-[var(--color-neon-green)] border border-[var(--color-neon-green)] hover:bg-[var(--color-neon-green)] hover:text-slate-950 font-mono font-bold text-xs uppercase tracking-widest cursor-pointer transition-all duration-300 shadow-[0_0_10px_rgba(57,255,20,0.1)]"
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <Download size={14} /> Save to Hard Drive
+                      </div>
+                    </button>
                   </div>
-                </button>
+                )}
                 
                 <button 
                   onClick={() => window.location.href = "/"}
                   className="w-full py-2.5 rounded-xl border border-slate-900 bg-slate-950/40 text-[10px] font-mono uppercase tracking-widest hover:bg-slate-950 hover:text-white text-slate-500 transition-all duration-300"
                 >
-                  Return to Dashboard
+                  Return to Access Terminal
                 </button>
               </div>
             </div>
