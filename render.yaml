@@ -20,11 +20,8 @@ services:
     autoDeploy: true
 
   # ---------- React Frontend (Static Site) ----------
-  - type: web
+  - type: static
     name: safeshare-ecc-frontend
-    runtime: static
-    region: oregon
-    plan: free
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
     routes:
