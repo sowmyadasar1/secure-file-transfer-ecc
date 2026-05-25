@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: secure-transfer-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - secure-uploads:/app/uploads
+      # Keep the database persistent
+      - secure-db:/app/backend
+    environment:
+      - DATABASE_URL=sqlite:///./database.db
+      # High-entropy fallback master key for rest sealing.
+      # In production, this can be loaded from KMS or a secret store.
+      - CRYPTO_MASTER_KEY=f6eb6873523274291c9535de4f55dbbb3f8bc991a03977efeb4225d3fa8f01a3
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: secure-transfer-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  # Named persistent volumes for encrypted files and SQLite database
+  secure-uploads:
+  secure-db:
