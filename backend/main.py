@@ -33,9 +33,15 @@ origins = [
     "http://localhost:3000",
 ]
 
+# In production, allow dynamic frontend URL and any Render subdomains
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url:
+    origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://.*\.onrender\.com",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
