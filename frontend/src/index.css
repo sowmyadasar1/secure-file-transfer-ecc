@@ -1,0 +1,151 @@
+@import "tailwindcss";
+
+/* Global Base Styles */
+:root {
+  color-scheme: dark;
+  --color-neon-blue: #00f0ff;
+  --color-neon-green: #39ff14;
+  --color-neon-red: #ff3131;
+  --color-dark-bg: #090e17;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-dark-bg);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(13, 37, 75, 0.4) 0px, transparent 50%),
+    radial-gradient(at 50% 0%, rgba(15, 23, 42, 0.9) 0px, transparent 60%),
+    radial-gradient(at 100% 0%, rgba(0, 150, 255, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(13, 20, 35, 0.9) 0px, transparent 80%);
+  background-attachment: fixed;
+  color: #e2e8f0;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom Webkit Scrollbars for Terminal Theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(13, 20, 35, 0.4);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.5);
+}
+
+/* Custom Glassmorphism System */
+.glass-card {
+  background: rgba(13, 20, 35, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card-glow-blue:hover {
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);
+  border-color: rgba(0, 240, 255, 0.35);
+}
+
+.glass-card-glow-green:hover {
+  box-shadow: 0 0 25px rgba(57, 255, 20, 0.15);
+  border-color: rgba(57, 255, 20, 0.35);
+}
+
+/* Neon Borders & Glow Elements */
+.border-neon-blue {
+  border-color: rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.1);
+}
+
+.border-neon-green {
+  border-color: rgba(57, 255, 20, 0.4);
+  box-shadow: 0 0 12px rgba(57, 255, 20, 0.1);
+}
+
+.border-neon-red {
+  border-color: rgba(255, 49, 49, 0.4);
+  box-shadow: 0 0 12px rgba(255, 49, 49, 0.1);
+}
+
+.text-glow-blue {
+  text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+}
+
+.text-glow-green {
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.6);
+}
+
+.text-glow-red {
+  text-shadow: 0 0 8px rgba(255, 49, 49, 0.6);
+}
+
+/* Animations & Keyframes */
+@keyframes scanning {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.animate-scan {
+  position: relative;
+  overflow: hidden;
+}
+.animate-scan::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to bottom, transparent, var(--color-neon-blue), transparent);
+  opacity: 0.7;
+  animation: scanning 2.5s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.6; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+@keyframes spin-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+/* Blinking terminal cursor */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.terminal-cursor::after {
+  content: "▋";
+  color: var(--color-neon-green);
+  animation: blink 1s step-start infinite;
+}
+
+/* Hex background grids */
+.bg-grid-cyber {
+  background-size: 30px 30px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+}
