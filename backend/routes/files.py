@@ -308,6 +308,54 @@ def share_file(
     }
 
 
+@router.get("/metadata/{id}")
+def get_file_metadata(
+    id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    is_shared_download = id.startswith("share_")
+    if is_shared_download:
+        try:
+            share_id = int(id.replace("share_", ""))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid share ID format")
+            
+        share = db.query(SharedFile).filter(SharedFile.id == share_id).first()
+        if not share:
+            raise HTTPException(status_code=404, detail="Shared file record not found")
+            
+        if current_user.id not in [share.shared_by_id, share.shared_with_id]:
+            raise HTTPException(status_code=403, detail="Unauthorized access to this shared file")
+            
+        return {
+            "id": id,
+            "filename": share.file.filename,
+            "file_size": share.file.file_size,
+            "owner_username": share.shared_by.username,
+            "recipient_username": share.shared_with.username,
+            "expiry_at": share.file.expiry_at,
+            "sha256_checksum": share.file.sha256_checksum,
+        }
+    else:
+        file_record = db.query(File).filter(File.id == id).first()
+        if not file_record:
+            raise HTTPException(status_code=404, detail="File not found")
+            
+        if current_user.id not in [file_record.owner_id, file_record.recipient_id]:
+            raise HTTPException(status_code=403, detail="Unauthorized access to this file")
+            
+        return {
+            "id": id,
+            "filename": file_record.filename,
+            "file_size": file_record.file_size,
+            "owner_username": file_record.owner.username,
+            "recipient_username": file_record.recipient.username,
+            "expiry_at": file_record.expiry_at,
+            "sha256_checksum": file_record.sha256_checksum,
+        }
+
+
 @router.get("/download/{id}")
 def download_file(
     id: str,

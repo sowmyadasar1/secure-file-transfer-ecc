@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from "react";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import SharePreview from "./pages/SharePreview";
 import TerminalLogs from "./components/TerminalLogs";
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isSharePage, setIsSharePage] = useState(false);
 
   useEffect(() => {
+    // Check if the current route is a secure sharing preview page
+    if (window.location.pathname.startsWith("/share/")) {
+      setIsSharePage(true);
+      setLoading(false);
+      return;
+    }
+
     // Check for cached cryptographic session
     const storedUser = localStorage.getItem("user");
     const storedToken = localStorage.getItem("token");
@@ -56,7 +65,9 @@ export default function App() {
   return (
     <div className="min-h-screen flex flex-col bg-slate-950/65 text-slate-200">
       {/* Dynamic Route Rendering */}
-      {!token ? (
+      {isSharePage ? (
+        <SharePreview />
+      ) : !token ? (
         <Auth onAuthSuccess={handleAuthSuccess} />
       ) : (
         <Dashboard user={user} token={token} onLogout={handleLogout} />

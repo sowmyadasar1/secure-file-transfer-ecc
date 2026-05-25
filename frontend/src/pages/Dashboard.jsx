@@ -292,7 +292,7 @@ export default function Dashboard({ user, token, onLogout }) {
     
     // We generate a clean secure token or direct download link
     const origin = window.location.origin;
-    const downloadUrl = `${origin}/api/files/download/${downloadId}?token=${token}`;
+    const downloadUrl = `${origin}/share/${downloadId}?token=${token}`;
     
     // Generate Google or QRServer url
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(downloadUrl)}`;
