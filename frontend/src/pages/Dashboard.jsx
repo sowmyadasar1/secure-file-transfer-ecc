@@ -292,7 +292,7 @@ export default function Dashboard({ user, token, onLogout }) {
     
     // We generate a clean secure token or direct download link
     const origin = window.location.origin;
-    const downloadUrl = `${origin}/api/files/download/${downloadId}`;
+    const downloadUrl = `${origin}/api/files/download/${downloadId}?token=${token}`;
     
     // Generate Google or QRServer url
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(downloadUrl)}`;
@@ -379,6 +379,12 @@ export default function Dashboard({ user, token, onLogout }) {
       window.addTerminalLog("ECC Public Key copied to clipboard.", "success");
     }
     alert("Public key copied to clipboard!");
+  };
+
+  const toLocalTime = (isoString) => {
+    if (!isoString) return null;
+    const clean = isoString.endsWith("Z") || isoString.includes("+") ? isoString : isoString + "Z";
+    return new Date(clean);
   };
 
   const formatBytes = (bytes) => {
@@ -982,7 +988,7 @@ export default function Dashboard({ user, token, onLogout }) {
                   {securityEvents.map((e) => (
                     <div key={e.id} className="py-2.5 flex items-start gap-4">
                       <span className="text-slate-500 min-w-[70px] select-none">
-                        [{new Date(e.created_at).toLocaleTimeString()}]
+                        [{toLocalTime(e.created_at)?.toLocaleTimeString()}]
                       </span>
                       
                       <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shrink-0 select-none border ${
@@ -1036,7 +1042,7 @@ export default function Dashboard({ user, token, onLogout }) {
                       {auditLogs.map((log) => (
                         <tr key={log.id} className="hover:bg-white/[0.01]">
                           <td className="py-2.5 pl-2 text-slate-500">
-                            {new Date(log.created_at).toLocaleString()}
+                            {toLocalTime(log.created_at)?.toLocaleString()}
                           </td>
                           <td className="py-2.5">
                             <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[9px] text-[var(--color-neon-blue)] font-bold tracking-widest uppercase">

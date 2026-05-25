@@ -11,7 +11,7 @@ from backend.services.crypto_service import generate_user_keypair, encrypt_with_
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login", auto_error=False)
 
 
 # --- PASSWORDS HASHING HELPERS ---
@@ -43,12 +43,19 @@ def create_access_token(data: dict, expires_delta: datetime.timedelta = None):
 
 # --- GET CURRENT USER DEPENDENCY ---
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+def get_current_user(request: Request, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    # Fallback to query parameter token if Authorization header is missing
+    if not token:
+        token = request.query_params.get("token")
+        
+    if not token:
+        raise credentials_exception
+        
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
